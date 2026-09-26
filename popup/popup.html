@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ЕМИАС Автоперенос</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-area">
+        <span class="logo-icon">🩺</span>
+        <div>
+          <h1 class="title">ЕМИАС Автоперенос</h1>
+          <span class="version">v1.2.2 (Полуавтомат + TG)</span>
+        </div>
+      </div>
+      <div id="connection-status" class="status-pill status-checking">
+        <span class="dot"></span>
+        <span class="status-text">Проверка...</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="tab-control">⚡ Перенос</button>
+      <button class="tab-btn" data-tab="tab-log">📜 Журнал</button>
+      <button class="tab-btn" data-tab="tab-telegram">📱 Telegram</button>
+      <button class="tab-btn" data-tab="tab-sniffer">🔍 API</button>
+    </nav>
+
+    <!-- Tab 1: Control & Reschedule -->
+    <section id="tab-control" class="tab-content active">
+      <!-- Closing tab warning notice -->
+      <div class="tab-warning">
+        <span class="warning-icon">💡</span>
+        <span>Для работы автопоиска держите вкладку ЕМИАС открытой (её можно свернуть).</span>
+      </div>
+
+      <!-- Live Monitor Status Card -->
+      <div id="monitor-status-card" class="monitor-card inactive">
+        <div class="monitor-header">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span id="monitor-pulse-dot" class="live-pulse hidden"></span>
+            <span id="monitor-badge" class="badge">⚪ Мониторинг выключен</span>
+          </div>
+          <span id="monitor-counter" class="subtext"></span>
+        </div>
+        <div id="monitor-detail" class="monitor-detail">
+          Выберите параметры и запустите поиск или проверьте слоты прямо сейчас.
+        </div>
+      </div>
+
+      <!-- Rich Appointment Card -->
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label class="form-label" style="margin-bottom: 0;">Запись для переноса:</label>
+          <select id="appointment-select" class="form-select-inline"></select>
+        </div>
+
+        <div id="rich-appointment-card" class="rich-card">
+          <div class="rich-card-header">
+            <span id="card-appt-num" class="rich-badge">АКТИВНАЯ ЗАПИСЬ</span>
+            <span id="card-appt-branch-short" class="rich-sub">ГП 115</span>
+          </div>
+          <div id="card-appt-title" class="rich-title">🩺 Загрузка данных...</div>
+          <div id="card-appt-time" class="rich-time">📅 Время загружается...</div>
+          <div id="card-appt-lpu" class="rich-lpu">📍 Адрес поликлиники...</div>
+        </div>
+      </div>
+
+      <!-- Mode selection (Semi-auto vs Full-auto) -->
+      <div class="form-group">
+        <label class="form-label">Режим бронирования:</label>
+        <div class="mode-selector">
+          <label class="mode-pill selected">
+            <input type="radio" name="transfer-mode" value="semi" checked>
+            <div>
+              <div class="mode-title">📲 Полуавтомат (TG)</div>
+              <div class="mode-desc">Присылает кнопку подтверждения на телефон</div>
+            </div>
+          </label>
+          <label class="mode-pill">
+            <input type="radio" name="transfer-mode" value="auto">
+            <div>
+              <div class="mode-title">⚡ Полный автомат</div>
+              <div class="mode-desc">Мгновенный перенос без вопросов</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Target time & window -->
+      <div class="form-group">
+        <label class="form-label">Желаемое целевое время:</label>
+        <input type="datetime-local" id="target-datetime" class="form-input">
+        <span class="form-hint">Система ищет слоты с наименьшим отклонением от этой даты и времени</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Допустимое окно:</label>
+          <select id="time-window" class="form-select">
+            <option value="15">± 15 минут</option>
+            <option value="30">± 30 минут</option>
+            <option value="60" selected>± 1 час</option>
+            <option value="120">± 2 часа</option>
+            <option value="any">Весь день</option>
+          </select>
+        </div>
+	  <!-- Interval slider -->
+      <div class="form-group">
+        <label class="form-label">Интервал проверки расписания:</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="range" id="interval-range" min="10" max="120" step="1" value="22"
+                 style="flex: 1; accent-color: #00897B;">
+          <span id="interval-value"
+                style="font-size: 12px; font-weight: 600; color: #00897B; min-width: 80px; text-align: right;">
+            22 сек
+          </span>
+        </div>
+        <span class="form-hint">Базовая пауза между проверками. К ней добавляется случайный разброс 0–11 сек. По умолчанию 22 сек.</span>
+      </div>
+        <div class="form-group checkbox-cell">
+          <label class="checkbox-label">
+            <input type="checkbox" id="any-doctor" checked>
+            <span>Любой врач/кабинет</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Branch/Clinic Selection -->
+      <div class="form-group" id="branch-selection-container">
+        <div class="branch-header">
+          <label class="form-label" style="margin-bottom: 0;">🏥 Подходящие филиалы:</label>
+          <div class="branch-actions">
+            <button type="button" id="branch-select-all-btn" class="btn-text">Выбрать все</button>
+            <span class="branch-sep">·</span>
+            <button type="button" id="branch-deselect-all-btn" class="btn-text">Снять все</button>
+          </div>
+        </div>
+        <div id="branch-list" class="branch-list">
+          <div class="branch-loading">Загрузка доступных филиалов...</div>
+        </div>
+        <span class="form-hint">Слоты будут искаться только в отмеченных филиалах</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="button-row">
+        <button id="find-now-btn" class="btn btn-secondary">
+          🔍 Найти слоты сейчас
+        </button>
+        <button id="toggle-monitor-btn" class="btn btn-primary">
+          🚀 Запустить автоперенос
+        </button>
+      </div>
+
+      <!-- Search results preview -->
+      <div id="quick-slots-container" class="slots-box hidden">
+        <div class="slots-title">Доступные слоты:</div>
+        <div id="slots-list" class="slots-list"></div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Mini Log History -->
+    <section id="tab-log" class="tab-content">
+      <div class="log-header">
+        <span class="section-title" style="margin-bottom: 0;">История действий и проверок:</span>
+        <button id="popup-clear-log-btn" class="btn-text">Очистить</button>
+      </div>
+      <div id="popup-log-list" class="mini-log-list">
+        <div class="empty-state">История проверок пока пуста</div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Telegram Settings -->
+    <section id="tab-telegram" class="tab-content">
+      <div class="info-card">
+        <div class="info-icon">📲</div>
+        <div class="info-text">
+          Бот пришлет интерактивную кнопку подтверждения прямо на телефон при обнаружении слота, а также позволяет остановить поиск командой <b>/stop</b>.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Telegram Bot Token:</label>
+        <input type="password" id="tg-token" class="form-input" placeholder="123456789:ABCdefGHIjklMNOpqr...">
+        <span class="form-hint">Токен из диалога с ботом @BotFather</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Telegram Chat ID:</label>
+        <input type="text" id="tg-chat-id" class="form-input" placeholder="например, 281031489">
+        <span class="form-hint">Ваш ID (можно узнать у бота @userinfobot)</span>
+      </div>
+
+      <div class="button-row">
+        <button id="save-tg-btn" class="btn btn-primary">Сохранить</button>
+        <button id="test-tg-btn" class="btn btn-secondary">Отправить тест</button>
+      </div>
+      <div id="tg-test-status" class="status-msg"></div>
+    </section>
+
+    <!-- Tab 4: Sniffer API Logs -->
+    <section id="tab-sniffer" class="tab-content">
+      <div class="stats-row">
+        <div class="stat-box">
+          <span class="stat-label">Перехвачено запросов</span>
+          <span id="requests-count" class="stat-value">0</span>
+        </div>
+        <div class="stat-actions">
+          <button id="copy-summary-btn" class="btn btn-primary">
+            📋 Скопировать
+          </button>
+          <button id="clear-requests-btn" class="btn btn-secondary">
+            Очистить
+          </button>
+        </div>
+      </div>
+
+      <div class="section-title">Журнал API:</div>
+      <div id="requests-container" class="requests-list">
+        <div class="empty-state">Ожидание сетевой активности на emias.info...</div>
+      </div>
+    </section>
+
+    <!-- Footer Toast -->
+    <footer class="footer">
+      <div id="toast" class="toast hidden"></div>
+    </footer>
+  </div>
+
+  <script src="../utils/time-matcher.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "ЕМИАС Автоперенос записи",
+  "version": "1.2.2",
+  "description": "Умный поиск слотов и полуавтоматический перенос записи к врачу на emias.info с подтверждением в Telegram",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://emias.info/*",
+    "https://*.emias.info/*",
+    "https://api.telegram.org/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "ЕМИАС Автоперенос",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://emias.info/*", "https://*.emias.info/*"],
+      "js": ["interceptor.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://emias.info/*", "https://*.emias.info/*"],
+      "js": ["utils/time-matcher.js", "utils/telegram.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

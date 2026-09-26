@@ -1,0 +1,22 @@
+# Dependencies & runtime
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Python
+__pycache__/
+*.pyc
+
+# Local credentials or temporary archives
+*.zip
+*.crx
+.env
