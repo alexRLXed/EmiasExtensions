@@ -1,8 +1,5 @@
 # 🩺 ЕМИАС Автоперенос записи (Chrome Extension)
 
-[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-emias.info-teal.svg)](https://emias.info)
 
 Неофициальное расширение для браузера Google Chrome, позволяющее находить освобождающиеся слоты в расписании врачей на портале [emias.info](https://emias.info/app/einfo/) и автоматически переносить выбранную запись на время, максимально близкое к желаемому.
 
